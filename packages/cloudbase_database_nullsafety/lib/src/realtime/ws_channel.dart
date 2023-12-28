@@ -47,7 +47,7 @@ class WSChannel {
       onMessage(message);
     };
     var onDone = () {
-      onClose(_ws?.closeCode, _ws?.closeReason);
+      onClose(_ws?.closeCode, _ws?.closeReason??'Close Reason is null');
     };
 
     _ws?.listen(onData, onError: onError, onDone: onDone);

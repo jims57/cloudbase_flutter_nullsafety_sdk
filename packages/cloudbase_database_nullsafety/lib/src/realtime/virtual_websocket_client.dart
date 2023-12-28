@@ -117,8 +117,8 @@ enum WATCH_STATUS {
 }
 
 typedef Future<LoginResult?> LoginFunc({String? envId, bool refresh});
-typedef Future<Map> SendFunc(
-    {Map msg, bool waitResponse, bool skipOnMessage, int timeout});
+typedef Future<Map?> SendFunc(
+    {Map? msg, bool waitResponse, bool skipOnMessage, int timeout});
 typedef bool IsWSConnectedFunc();
 typedef Future<void>? OnceWSConnectedFunc();
 typedef num GetWaitExpectedTimeoutLengthFunc();
@@ -150,7 +150,7 @@ class VirtualWebSocketClient {
 
   // own
   RealtimeListener? listener;
-  late WATCH_STATUS _watchStatus;
+  WATCH_STATUS? _watchStatus;
   late AvailableRetries _availableRetries;
   Timer? _ackTimer;
   Future<void>? _initWatchPromise;
@@ -243,11 +243,11 @@ class VirtualWebSocketClient {
     Console.log('[realtime] initWatch ${success ? 'success' : 'fail'}');
   }
 
-  void _internalInitWatch(bool forceRefreshLogin, Completer completer) async {
+  void _internalInitWatch(bool forceRefreshLogin, Completer? completer) async {
     try {
-      if (this._watchStatus == WATCH_STATUS.PAUSED) {
+      if (this?._watchStatus == WATCH_STATUS.PAUSED) {
         Console.log('[realtime] initWatch cancelled on pause');
-        return completer.complete();
+        return completer?.complete();
       }
 
       LoginResult? loginResult = await this
@@ -255,7 +255,7 @@ class VirtualWebSocketClient {
 
       if (this._watchStatus == WATCH_STATUS.PAUSED) {
         Console.log('[realtime] initWatch cancelled on pause');
-        return completer.complete();
+        return completer?.complete();
       }
 
       this._watchStatus = WATCH_STATUS.INITING;
@@ -306,7 +306,7 @@ class VirtualWebSocketClient {
       this._onWatchStart?.call(this, this._sessionInfo!.queryID);
       this._watchStatus = WATCH_STATUS.ACTIVE;
       this._availableRetries.initWatch = DEFAULT_MAX_AUTO_RETRY_ON_ERROR;
-      completer.complete();
+      completer?.complete();
     } catch (e) {
       this._handleWatchEstablishmentError(
           e: e, operationName: 'INIT_WATCH', completer: completer);
@@ -338,11 +338,11 @@ class VirtualWebSocketClient {
   }
 
   void _internalRebuildWatch(
-      bool forceRefreshLogin, Completer completer) async {
+      bool forceRefreshLogin, Completer? completer) async {
     try {
       if (this._watchStatus == WATCH_STATUS.PAUSED) {
         Console.log('[realtime] initWatch cancelled on pause');
-        return completer.complete();
+        return completer?.complete();
       }
 
       LoginResult? loginResult = await this
@@ -354,7 +354,7 @@ class VirtualWebSocketClient {
 
       if (this._watchStatus == WATCH_STATUS.PAUSED) {
         Console.log('[realtime] rebuildWatch cancelled on pause');
-        return completer.complete();
+        return completer?.complete();
       }
 
       this._watchStatus = WATCH_STATUS.REBUILDING;
@@ -381,7 +381,7 @@ class VirtualWebSocketClient {
 
       this._watchStatus = WATCH_STATUS.ACTIVE;
       this._availableRetries.rebuildWatch = DEFAULT_MAX_AUTO_RETRY_ON_ERROR;
-      completer.complete();
+      completer?.complete();
     } catch (e) {
       this._handleWatchEstablishmentError(
           e: e, operationName: 'REBUILD_WATCH', completer: completer);

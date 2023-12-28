@@ -16,11 +16,10 @@ class LoginInfo {
   DateTime? loginStartDT;
   LoginResult? loginResult;
 
-  LoginInfo(
-      {this.loggedIn,
-      this.loggingInPromise,
-      this.loginStartDT,
-      this.loginResult});
+  LoginInfo({this.loggedIn,
+    this.loggingInPromise,
+    this.loginStartDT,
+    this.loginResult});
 }
 
 class LoginResult {
@@ -66,6 +65,7 @@ class RealtimeWebSocketClient {
   Map<String, ResponseWaitSpec> _wsResponseWait = {};
   List<num> _rttObserved = [];
   bool _reconnectState = false;
+
   // appConfig
   int? _realtimePingInterval;
   int? _realtimePongWaitTimeout;
@@ -84,6 +84,7 @@ class RealtimeWebSocketClient {
     this._realtimePongWaitTimeout = realtimePongWaitTimeout;
     this._getAccessToken = getAccessToken;
   }
+
   static RealtimeWebSocketClient? _client;
 
   factory RealtimeWebSocketClient.getInstance(CloudBaseCore core) {
@@ -144,10 +145,9 @@ class RealtimeWebSocketClient {
     }
   }
 
-  void _internalInitWebSocketConnection(
-      {bool reconnect = false,
-      int availableRetries = 0,
-      Completer? completer}) async {
+  void _internalInitWebSocketConnection({bool reconnect = false,
+    int availableRetries = 0,
+    Completer? completer}) async {
     try {
       this._getAccessToken?.call();
 
@@ -163,7 +163,8 @@ class RealtimeWebSocketClient {
       }
     } catch (e) {
       Console.error(
-          '[realtime] initWebSocketConnection connect fail, error: ${e.toString()}');
+          '[realtime] initWebSocketConnection connect fail, error: ${e
+              .toString()}');
 
       if (availableRetries > 0) {
         bool isConnected = true;
@@ -309,7 +310,8 @@ class RealtimeWebSocketClient {
           }
         } catch (e) {
           Console.error(
-              'ws onMessage responseWaitSpec.resolve(msg) errored: ${e.toString()}');
+              'ws onMessage responseWaitSpec.resolve(msg) errored: ${e
+                  .toString()}');
         } finally {
           this._wsResponseWait.remove(requestId);
         }
@@ -320,7 +322,9 @@ class RealtimeWebSocketClient {
 
       if (msgType == 'PONG') {
         if (this._lastPingSendDT != null) {
-          num rtt = DateTime.now().millisecondsSinceEpoch -
+          num rtt = DateTime
+              .now()
+              .millisecondsSinceEpoch -
               this._lastPingSendDT!.millisecondsSinceEpoch;
           if (rtt > DEFAULT_UNTRUSTED_RTT_THRESHOLD) {
             Console.warn('[realtime] untrusted rtt observed: ${rtt}');
@@ -336,7 +340,7 @@ class RealtimeWebSocketClient {
       }
 
       VirtualWebSocketClient? client =
-          watchId != null ? this._watchIdClientMap[watchId] : null;
+      watchId != null ? this._watchIdClientMap[watchId] : null;
       if (client != null) {
         client.onMessage(msg);
       } else {
@@ -473,6 +477,8 @@ class RealtimeWebSocketClient {
           skipOnMessage: true,
           timeout: DEFAULT_LOGIN_TIMEOUT);
 
+      if (loginResMsg == null) throw Exception('loginResMsg is null!');
+
       if (loginResMsg['msgData']['code'] == null) {
         completer.complete(LoginResult(envId: accessTokenRes?['envId']));
       } else {
@@ -500,36 +506,37 @@ class RealtimeWebSocketClient {
     this._clearHeartbeat();
     this._pingTimer = Timer(
         Duration(milliseconds: immediate ? 0 : this._realtimePingInterval ?? 0),
-        () async {
-      try {
-        if (this._ws == null || this._ws?.readyState != WS_READY_STATUS.OPEN) {
-          return;
-        }
+            () async {
+          try {
+            if (this._ws == null ||
+                this._ws?.readyState != WS_READY_STATUS.OPEN) {
+              return;
+            }
 
-        this._lastPingSendDT = DateTime.now();
-        await this._ping();
-        this._pingFailed = 0;
+            this._lastPingSendDT = DateTime.now();
+            await this._ping();
+            this._pingFailed = 0;
 
-        this._pongTimer = Timer(
-            Duration(milliseconds: this._realtimePongWaitTimeout ?? 0), () {
-          Console.error('pong timed out');
-          if (this._pongMissed < DEFAULT_PONG_MISS_TOLERANCE) {
-            this._pongMissed++;
-            this._heartbeat();
-          } else {
-            // logical perceived connection lost, even though websocket did not receive error or close event
-            this._initWebSocketConnection(reconnect: true);
+            this._pongTimer = Timer(
+                Duration(milliseconds: this._realtimePongWaitTimeout ?? 0), () {
+              Console.error('pong timed out');
+              if (this._pongMissed < DEFAULT_PONG_MISS_TOLERANCE) {
+                this._pongMissed++;
+                this._heartbeat();
+              } else {
+                // logical perceived connection lost, even though websocket did not receive error or close event
+                this._initWebSocketConnection(reconnect: true);
+              }
+            });
+          } catch (e) {
+            if (this._pingFailed < DEFAULT_PING_FAIL_TOLERANCE) {
+              this._pingFailed++;
+              this._heartbeat();
+            } else {
+              this.close(CloseEventCode.HeartbeatPingError);
+            }
           }
         });
-      } catch (e) {
-        if (this._pingFailed < DEFAULT_PING_FAIL_TOLERANCE) {
-          this._pingFailed++;
-          this._heartbeat();
-        } else {
-          this.close(CloseEventCode.HeartbeatPingError);
-        }
-      }
-    });
   }
 
   _clearHeartbeat() {
@@ -545,12 +552,11 @@ class RealtimeWebSocketClient {
     await this.send(msg: msg);
   }
 
-  Future<Map> send(
-      {Map? msg,
-      bool waitResponse = false,
-      bool skipOnMessage = false,
-      int? timeout}) {
-    Completer<Map> completer = Completer();
+  Future<Map?> send({Map? msg,
+    bool waitResponse = false,
+    bool skipOnMessage = false,
+    int? timeout}) {
+    Completer<Map?> completer = Completer();
     this._send(
         msg: msg,
         waitResponse: waitResponse,
@@ -560,12 +566,11 @@ class RealtimeWebSocketClient {
     return completer.future;
   }
 
-  void _send(
-      {Map? msg,
-      bool waitResponse = false,
-      bool skipOnMessage = false,
-      int? timeout,
-      Completer<Map>? completer}) async {
+  void _send({Map? msg,
+    bool waitResponse = false,
+    bool skipOnMessage = false,
+    int? timeout,
+    required Completer<Map?> completer}) async {
     Timer? timer;
     bool hasResolved = false;
     bool hasRejected = false;
@@ -609,7 +614,8 @@ class RealtimeWebSocketClient {
       }
 
       if (this._ws?.readyState != WS_READY_STATUS.OPEN) {
-        throw 'ws readyState invalid: ${this._ws?.readyState}, can not send message';
+        throw 'ws readyState invalid: ${this._ws
+            ?.readyState}, can not send message';
       }
 
       if (waitResponse) {
@@ -682,14 +688,13 @@ class RealtimeWebSocketClient {
     }
   }
 
-  watch(
-      {String? envId,
-      String? collectionName,
-      String? query,
-      num? limit,
-      Map<String, String>? orderBy,
-      Function? onChange,
-      Function? onError}) {
+  watch({String? envId,
+    String? collectionName,
+    String? query,
+    num? limit,
+    Map<String, String>? orderBy,
+    Function? onChange,
+    Function? onError}) {
     if (this._ws == null && this._wsInitPromise == null) {
       this._initWebSocketConnection(reconnect: false);
     }
